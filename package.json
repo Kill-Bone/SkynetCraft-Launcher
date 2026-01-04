@@ -1,0 +1,34 @@
+{
+  "name": "skynet-launcher",
+  "version": "1.0.0",
+  "description": "Minecraft Skynet Launcher",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "author": "Gamer",
+  "license": "ISC",
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "minecraft-launcher-core": "^3.2.2"
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.skynet.launcher",
+    "win": {
+      "target": "portable",
+      "icon": "icon.ico.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "A-TE-GITHUB-NEVED",
+        "repo": "A-REPOSITORID-NEVE"
+      }
+    ]
+  }
+}
