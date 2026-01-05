@@ -1,35 +1,50 @@
 {
-  "name": "skynet-launcher",
-  "version": "1.0.1",
-  "description": "Minecraft Skynet Launcher",
+  "name": "skynetcraft-launcher",
+  "version": "1.0.3",
+  "description": "SkynetCraft Unified Launcher",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "build": "electron-builder",
+    "publish": "electron-builder --publish always"
   },
-  "author": "Gamer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FELHASZNALONEVED/REPOD-NEVE.git"
+  },
+  "author": "SkynetCraft",
   "license": "ISC",
-  "dependencies": {
-    "electron-updater": "^6.6.2",
-    "mc-server-status": "^2.0.2",
-    "minecraft-launcher-core": "^3.18.2"
-  },
-  "devDependencies": {
-    "electron": "^39.2.7",
-    "electron-builder": "^24.9.1"
-  },
   "build": {
-    "appId": "com.skynet.launcher",
+    "appId": "com.skynetcraft.launcher",
+    "productName": "SkynetCraft Launcher",
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "target": "portable",
-      "icon": "icon.ico.ico"
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "SkynetCraft"
     },
     "publish": [
       {
         "provider": "github",
-        "owner": "KillBone",
-        "repo": "A-REPOSITORID-NEVE"
+        "owner": "Kill-Bone",
+        "repo": "SkynetCraft-Launcher"
       }
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7",
+    "minecraft-launcher-core": "^3.2.3"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
   }
 }

@@ -2,37 +2,19 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Client, Authenticator } = require('minecraft-launcher-core');
-const launcher = new Client();
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
-
-// Útvonalak
-const minecraftPath = path.join(app.getPath('userData'), ".minecraft");
-const configPath = path.join(app.getPath('userData'), 'config.json');
-
-// Szerverlista másolása (hogy a Multiplayer menüben ott legyenek a szerverek)
-function updateServerList() {
-    const sourceServersDat = path.join(__dirname, 'servers.dat');
-    const targetServersDat = path.join(minecraftPath, 'servers.dat');
-    try {
-        if (!fs.existsSync(minecraftPath)) {
-            fs.mkdirSync(minecraftPath, { recursive: true });
-        }
-        if (fs.existsSync(sourceServersDat)) {
-            fs.copyFileSync(sourceServersDat, targetServersDat);
-        }
-    } catch (err) {
-        console.error("Szerverlista hiba:", err);
-    }
-}
+const launcher = new Client();
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 380,
+        width: 400,
         height: 600,
-        transparent: true,
         frame: false,
+        transparent: true,
         resizable: false,
+        icon: path.join(__dirname, 'icon.ico'), // Az ikon beállítása
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
@@ -40,59 +22,87 @@ function createWindow() {
     });
 
     mainWindow.loadFile('index.html');
+
+    // Automatikus frissítés keresése indításkor
+    autoUpdater.checkForUpdatesAndNotify();
 }
-
-ipcMain.handle('get-profile', async () => {
-    if (fs.existsSync(configPath)) {
-        try {
-            return JSON.parse(fs.readFileSync(configPath));
-        } catch (e) { return null; }
-    }
-    return null;
-});
-
-ipcMain.on('save-profile', (event, userData) => {
-    // Adatok mentése
-    fs.writeFileSync(configPath, JSON.stringify({
-        username: userData.username,
-        password: userData.password
-    }));
-
-    // Szerverlista frissítése indítás előtt
-    updateServerList();
-
-    // Minecraft indítása
-    let opts = {
-        authorization: Authenticator.getAuth(userData.username),
-        root: minecraftPath,
-        version: {
-            number: "1.21",
-            type: "release"
-        },
-        memory: {
-            max: "3G",
-            min: "1G"
-        }
-    };
-
-    launcher.launch(opts);
-
-    launcher.on('progress', (e) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('download-progress', e);
-        }
-    });
-
-    launcher.on('close', () => {
-        console.log("Játék bezárva.");
-    });
-});
-
-ipcMain.on('close-app', () => app.quit());
-ipcMain.on('minimize-app', () => mainWindow.minimize());
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+// --- SZERVERLISTA MÁSOLÓ RÉSZ ---
+function syncServerList() {
+    const minecraftPath = path.join(app.getPath('userData'), '.minecraft');
+    const serverFileSource = path.join(__dirname, 'servers.dat');
+    const serverFileDest = path.join(minecraftPath, 'servers.dat');
+
+    try {
+        if (fs.existsSync(serverFileSource)) {
+            // Ha nem létezik a .minecraft mappa, létrehozzuk
+            if (!fs.existsSync(minecraftPath)) {
+                fs.mkdirSync(minecraftPath, { recursive: true });
+            }
+            // Átmásoljuk a fájlt
+            fs.copyFileSync(serverFileSource, serverFileDest);
+            console.log("Szerverlista sikeresen szinkronizálva!");
+        }
+    } catch (err) {
+        console.error("Hiba a szerverlista másolásakor:", err);
+    }
+}
+
+// --- JÁTÉK INDÍTÁSA ---
+ipcMain.on('launch-game', async (event, args) => {
+    // 1. Szerverlista frissítése indítás előtt
+    syncServerList();
+
+    // 2. Bejelentkezés (Offline mód)
+    const auth = Authenticator.getAuth(args.username);
+
+    const opts = {
+        clientPackage: null,
+        authorization: auth,
+        root: path.join(app.getPath('userData'), '.minecraft'),
+        version: {
+            number: "1.20.1", // Itt írd át a verziót, ha mást használtok!
+            type: "release"
+        },
+        memory: {
+            max: "4G",
+            min: "2G"
+        }
+    };
+
+    console.log("Indítás folyamatban...");
+    launcher.launch(opts);
+
+    launcher.on('debug', (e) => console.log(e));
+    launcher.on('data', (e) => console.log(e));
+    
+    launcher.on('progress', (e) => {
+        event.reply('launch-progress', e);
+    });
+
+    launcher.on('close', () => {
+        console.log("A játék bezárult.");
+        if (mainWindow) mainWindow.show();
+    });
+
+    // Indítás után elrejtjük a launchert
+    launcher.on('launch', () => {
+        console.log("Játék elindult!");
+        if (mainWindow) mainWindow.hide();
+    });
+});
+
+// Ablak kezelés
+ipcMain.on('close-app', () => app.quit());
+ipcMain.on('minimize-app', () => mainWindow.minimize());
+
+// Frissítési üzenetek küldése a kezelőfelületre (opcionális)
+autoUpdater.on('update-available', () => {
+    console.log('Frissítés elérhető!');
+});
+
+autoUpdater.on('update-downloaded', () => {
+    autoUpdater.quitAndInstall();
 });
