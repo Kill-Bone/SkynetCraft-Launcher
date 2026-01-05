@@ -1,123 +1,98 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
-const mclc = require('minecraft-launcher-core');
-const { Client } = require('minecraft-launcher-core');
-const { autoUpdater } = require("electron-updater"); // Frissítés modul
-
+const { Client, Authenticator } = require('minecraft-launcher-core');
 const launcher = new Client();
 
-// GRAFIKAI JAVÍTÁS: Hardveres gyorsítás kikapcsolása a fekete csíkok ellen
-app.disableHardwareAcceleration();
-
 let mainWindow;
-const dbPath = path.join(process.cwd(), 'users.json');
 
-// Jelszó titkosítása
-function hashPassword(password) {
-    return crypto.createHash('sha256').update(password).digest('hex');
-}
+// Útvonalak
+const minecraftPath = path.join(app.getPath('userData'), ".minecraft");
+const configPath = path.join(app.getPath('userData'), 'config.json');
 
-// Felhasználók kezelése
-function getUsers() {
+// Szerverlista másolása (hogy a Multiplayer menüben ott legyenek a szerverek)
+function updateServerList() {
+    const sourceServersDat = path.join(__dirname, 'servers.dat');
+    const targetServersDat = path.join(minecraftPath, 'servers.dat');
     try {
-        if (!fs.existsSync(dbPath)) {
-            fs.writeFileSync(dbPath, JSON.stringify({}));
-            return {};
+        if (!fs.existsSync(minecraftPath)) {
+            fs.mkdirSync(minecraftPath, { recursive: true });
         }
-        return JSON.parse(fs.readFileSync(dbPath));
+        if (fs.existsSync(sourceServersDat)) {
+            fs.copyFileSync(sourceServersDat, targetServersDat);
+        }
     } catch (err) {
-        return {};
+        console.error("Szerverlista hiba:", err);
     }
-}
-
-function saveUser(username, password) {
-    const users = getUsers();
-    users[username] = password;
-    fs.writeFileSync(dbPath, JSON.stringify(users, null, 2));
 }
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 350,
-        height: 500,
-        frame: false,
+        width: 380,
+        height: 600,
         transparent: true,
+        frame: false,
         resizable: false,
-        hasShadow: false,
-        thickFrame: false,
-        icon: path.join(__dirname, 'icon.ico.ico'),
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
         }
     });
-    mainWindow.loadFile('index.html');
 
-    // FRISSÍTÉS ELLENŐRZÉSE INDÍTÁSKOR
-    mainWindow.once('ready-to-show', () => {
-        autoUpdater.checkForUpdatesAndNotify();
-    });
+    mainWindow.loadFile('index.html');
 }
 
-// Auto-updater visszajelzések (opcionális logolás)
-autoUpdater.on('update-available', () => {
-    console.log('Frissítés elérhető!');
-});
-
-autoUpdater.on('update-downloaded', () => {
-    console.log('Frissítés letöltve, telepítés újraindításkor.');
-});
-
-app.whenReady().then(createWindow);
-
-// --- KOMMUNIKÁCIÓ ---
-
-ipcMain.on('register-user', (event, data) => {
-    const users = getUsers();
-    if (users[data.user]) {
-        event.reply('auth-error', 'Ez a név foglalt!');
-        return;
+ipcMain.handle('get-profile', async () => {
+    if (fs.existsSync(configPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(configPath));
+        } catch (e) { return null; }
     }
-    saveUser(data.user, hashPassword(data.pass));
-    event.reply('auth-success', 'Sikeres regisztráció!');
+    return null;
 });
 
-ipcMain.on('launch-game', (event, data) => {
-    const users = getUsers();
-    const hashedInputPass = hashPassword(data.pass);
+ipcMain.on('save-profile', (event, userData) => {
+    // Adatok mentése
+    fs.writeFileSync(configPath, JSON.stringify({
+        username: userData.username,
+        password: userData.password
+    }));
 
-    if (!users[data.user] || users[data.user] !== hashedInputPass) {
-        event.reply('auth-error', 'Hibás adatok!');
-        return;
-    }
+    // Szerverlista frissítése indítás előtt
+    updateServerList();
 
-    const rootPath = path.join(process.cwd(), 'minecraft_data');
-    
-    const auth = {
-        access_token: "null",
-        client_token: "null",
-        uuid: "12345678-1234-1234-1234-1234567890ab",
-        name: data.user,
-        user_properties: "{}"
-    };
-
+    // Minecraft indítása
     let opts = {
-        authorization: auth,
-        root: rootPath,
-        version: { number: "1.20.1", type: "release" },
-        memory: { max: "2G", min: "1G" }
+        authorization: Authenticator.getAuth(userData.username),
+        root: minecraftPath,
+        version: {
+            number: "1.21",
+            type: "release"
+        },
+        memory: {
+            max: "3G",
+            min: "1G"
+        }
     };
+
+    launcher.launch(opts);
 
     launcher.on('progress', (e) => {
-        if (!mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('progress', e);
+        if (mainWindow) {
+            mainWindow.webContents.send('download-progress', e);
         }
     });
 
-    launcher.launch(opts);
-    launcher.on('launch', () => { app.quit(); });
+    launcher.on('close', () => {
+        console.log("Játék bezárva.");
+    });
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+ipcMain.on('close-app', () => app.quit());
+ipcMain.on('minimize-app', () => mainWindow.minimize());
+
+app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+});

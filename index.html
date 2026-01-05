@@ -2,119 +2,163 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Skynet Launcher</title>
+    <title>SkynetCraft Launcher</title>
     <style>
-        * { box-sizing: border-box; }
-        body { 
-            margin: 0; padding: 0; 
-            display: flex; align-items: center; justify-content: center; 
-            height: 100vh; background: transparent; 
-            font-family: 'Segoe UI', sans-serif; 
-            -webkit-app-region: drag; 
-            overflow: hidden;
+        :root {
+            --primary: #2ecc71;
+            --glass: rgba(12, 14, 20, 0.98);
+            --border: rgba(255, 255, 255, 0.08);
         }
-        .card { 
-            background: #121212; /* Szilárd szín, hogy ne csíkozódjon az átlátszóság miatt */
-            padding: 30px; border-radius: 20px; 
-            width: 300px; text-align: center; 
-            border: 2px solid #4CAF50;
+
+        body {
+            margin: 0; padding: 0;
+            background: transparent;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        .launcher-card {
+            width: 320px;
+            background: var(--glass);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 45px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            text-align: center;
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            -webkit-app-region: drag;
         }
-        input, button, .tab, .close-btn { -webkit-app-region: no-drag; }
 
-        .close-btn {
-            position: absolute; top: 15px; right: 20px;
-            color: #444; cursor: pointer; font-size: 18px; transition: 0.2s;
+        .window-controls {
+            position: absolute; top: 25px; right: 30px;
+            -webkit-app-region: no-drag;
         }
-        .close-btn:hover { color: #ff4444; }
 
-        h1 { color: #4CAF50; margin: 5px 0 20px 0; letter-spacing: 5px; font-size: 28px; font-weight: bold; }
-        
-        .tabs { display: flex; margin-bottom: 20px; background: #000; border-radius: 8px; padding: 4px; }
-        .tab { flex: 1; padding: 10px; cursor: pointer; color: #555; border-radius: 6px; transition: 0.3s; font-size: 12px; font-weight: bold; }
-        .tab.active { background: #4CAF50; color: white; }
-        
-        input { 
-            width: 100%; padding: 12px; margin: 8px 0; 
-            border-radius: 6px; border: 1px solid #222; 
-            background: #080808; color: white; 
-            outline: none;
+        .control-btn {
+            background: none; border: none; color: #333;
+            font-size: 20px; cursor: pointer; padding: 5px;
         }
-        input:focus { border-color: #4CAF50; }
-        
-        button { 
-            width: 100%; padding: 14px; background: #4CAF50; 
-            color: white; border: none; border-radius: 6px; 
-            cursor: pointer; font-weight: bold; font-size: 15px; 
-            margin-top: 15px;
+        .control-btn:hover { color: var(--primary); }
+
+        h1 { font-size: 26px; margin: 0 0 40px 0; color: white; letter-spacing: 4px; font-weight: 900; }
+        h1 span { color: var(--primary); }
+
+        .tab-group {
+            display: flex;
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 5px;
+            -webkit-app-region: no-drag;
         }
-        button:hover { background: #45a049; }
-        
-        .progress-container { width: 100%; background: #000; border-radius: 10px; margin-top: 20px; display: none; height: 8px; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: #4CAF50; transition: width 0.3s; }
-        
-        #status { margin-top: 15px; font-size: 12px; color: #777; min-height: 15px; }
+
+        .tab {
+            flex: 1; padding: 10px; font-size: 10px; color: #555;
+            cursor: pointer; transition: 0.3s; border-radius: 10px;
+            font-weight: 800; letter-spacing: 1px;
+        }
+
+        .tab.active { background: var(--primary); color: #000; }
+
+        .form-group { display: flex; flex-direction: column; gap: 15px; -webkit-app-region: no-drag; }
+
+        input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 16px; border-radius: 18px;
+            color: white; outline: none; transition: 0.4s;
+            font-size: 13px; text-align: center;
+        }
+        input:focus { border-color: var(--primary); background: rgba(255,255,255,0.06); }
+
+        #confirm-pass { display: none; }
+
+        .launch-btn {
+            background: var(--primary); color: #000;
+            border: none; padding: 20px; border-radius: 20px;
+            font-weight: 900; cursor: pointer; margin-top: 10px;
+            transition: 0.3s; font-size: 14px; letter-spacing: 1px;
+        }
+        .launch-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(46, 204, 113, 0.4); }
+
+        /* A státusz sáv szöveg nélkül */
+        .status-box { margin-top: 40px; }
+        #status-txt { font-size: 9px; color: #333; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; min-height: 12px; }
+        .bar-bg { height: 2px; background: rgba(255,255,255,0.02); border-radius: 1px; overflow: hidden; }
+        .bar-fill { width: 0%; height: 100%; background: var(--primary); transition: 0.5s; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="close-btn" onclick="window.close()">✕</div>
-        <h1>SKYNET</h1>
-        
-        <div id="main-ui">
-            <div class="tabs">
-                <div id="loginTab" class="tab active" onclick="setMode('login')">BELÉPÉS</div>
-                <div id="regTab" class="tab" onclick="setMode('reg')">REGISZTRÁCIÓ</div>
-            </div>
 
+    <div class="launcher-card">
+        <div class="window-controls">
+            <button class="control-btn" onclick="ipcRenderer.send('minimize-app')">_</button>
+            <button class="control-btn" onclick="ipcRenderer.send('close-app')">×</button>
+        </div>
+
+        <h1>SKYNET<span>CRAFT</span></h1>
+        
+        <div class="tab-group">
+            <div class="tab active" id="login-tab">BEJELENTKEZÉS</div>
+            <div class="tab" id="reg-tab">REGISZTRÁCIÓ</div>
+        </div>
+
+        <div class="form-group">
             <input type="text" id="username" placeholder="Felhasználónév">
             <input type="password" id="password" placeholder="Jelszó">
-            <button id="mainBtn" onclick="action()">BELÉPÉS</button>
+            <input type="password" id="confirm-pass" placeholder="Jelszó megerősítése">
+            <button class="launch-btn" id="btn-launch">INDÍTÁS</button>
         </div>
 
-        <div class="progress-container" id="progressCont">
-            <div class="progress-bar" id="progressBar"></div>
+        <div class="status-box">
+            <div id="status-txt"></div> <div class="bar-bg"><div class="bar-fill" id="fill"></div></div>
         </div>
-        <div id="status"></div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
-        let mode = 'login';
 
-        function setMode(m) {
-            mode = m;
-            document.getElementById('loginTab').className = m === 'login' ? 'tab active' : 'tab';
-            document.getElementById('regTab').className = m === 'reg' ? 'tab active' : 'tab';
-            document.getElementById('mainBtn').innerText = m === 'login' ? 'INDÍTÁS' : 'REGISZTRÁCIÓ';
-            document.getElementById('status').innerText = "";
-        }
+        const loginTab = document.getElementById('login-tab');
+        const regTab = document.getElementById('reg-tab');
+        const confirmInput = document.getElementById('confirm-pass');
+        const btn = document.getElementById('btn-launch');
+        const fill = document.getElementById('fill');
+        const status = document.getElementById('status-txt');
 
-        function action() {
+        loginTab.onclick = () => {
+            loginTab.classList.add('active'); regTab.classList.remove('active');
+            confirmInput.style.display = 'none'; btn.innerText = "INDÍTÁS";
+        };
+
+        regTab.onclick = () => {
+            regTab.classList.add('active'); loginTab.classList.remove('active');
+            confirmInput.style.display = 'block'; btn.innerText = "REGISZTRÁCIÓ";
+        };
+
+        ipcRenderer.invoke('get-profile').then(data => {
+            if(data) {
+                document.getElementById('username').value = data.username || '';
+                document.getElementById('password').value = data.password || '';
+            }
+        });
+
+        btn.onclick = () => {
             const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            if (!user || !pass) return;
-            ipcRenderer.send(mode === 'login' ? 'launch-game' : 'register-user', { user, pass });
-        }
+            if(!user) return;
+            // Indításkor megjelenhet egy rövid infó, ha szeretnéd
+            status.innerText = "Indítás..."; 
+            ipcRenderer.send('save-profile', { 
+                username: user, 
+                password: document.getElementById('password').value 
+            });
+        };
 
-        ipcRenderer.on('auth-error', (e, msg) => {
-            const s = document.getElementById('status');
-            s.innerText = msg; s.style.color = "#ff4444";
-        });
-
-        ipcRenderer.on('auth-success', (e, msg) => {
-            const s = document.getElementById('status');
-            s.innerText = msg; s.style.color = "#4CAF50";
-            if(mode === 'reg') setTimeout(() => setMode('login'), 1500);
-        });
-
-        ipcRenderer.on('progress', (e, data) => {
-            document.getElementById('main-ui').style.display = "none";
-            document.getElementById('progressCont').style.display = "block";
-            const percent = Math.round((data.task / data.total) * 100);
-            document.getElementById('progressBar').style.width = percent + "%";
-            document.getElementById('status').innerText = `Töltés: ${percent}%`;
+        ipcRenderer.on('download-progress', (event, data) => {
+            const pct = Math.round(data.task / data.total * 100);
+            status.innerText = `Frissítés: ${pct}%`;
+            fill.style.width = pct + "%";
         });
     </script>
 </body>

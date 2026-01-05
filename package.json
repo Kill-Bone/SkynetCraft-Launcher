@@ -1,6 +1,6 @@
 {
   "name": "skynet-launcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Minecraft Skynet Launcher",
   "main": "main.js",
   "scripts": {
@@ -11,7 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "electron-updater": "^6.6.2",
-    "minecraft-launcher-core": "^3.2.2"
+    "mc-server-status": "^2.0.2",
+    "minecraft-launcher-core": "^3.18.2"
   },
   "devDependencies": {
     "electron": "^39.2.7",
@@ -26,7 +27,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "A-TE-GITHUB-NEVED",
+        "owner": "KillBone",
         "repo": "A-REPOSITORID-NEVE"
       }
     ]
