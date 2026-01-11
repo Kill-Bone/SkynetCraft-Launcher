@@ -1,35 +1,33 @@
 {
-  "name": "skynetcraft-launcher",
-  "version": "1.0.3",
-  "description": "SkynetCraft Unified Launcher",
+  "name": "skynet-launcher",
+  "version": "1.0.9",
+  "description": "Minecraft Launcher with Auto-Serverlist",
   "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "build": "electron-builder",
-    "publish": "electron-builder --publish always"
-  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/FELHASZNALONEVED/REPOD-NEVE.git"
+    "url": "https://github.com/Kill-Bone/SkynetCraft-Launcher.git"
   },
-  "author": "SkynetCraft",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "Skynet",
   "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "electron-updater": "^6.7.3",
+    "minecraft-launcher-core": "^3.2.2"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
   "build": {
-    "appId": "com.skynetcraft.launcher",
-    "productName": "SkynetCraft Launcher",
+    "appId": "com.skynet.launcher",
+    "productName": "Skynet Launcher",
     "directories": {
       "output": "dist"
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "icon": "icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "shortcutName": "SkynetCraft"
     },
     "publish": [
       {
@@ -37,14 +35,29 @@
         "owner": "Kill-Bone",
         "repo": "SkynetCraft-Launcher"
       }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
+    },
+    "files": [
+      "**/*",
+      "servers.dat",
+      "index.html",
+      "icon.ico",
+      "main.js"
+    ],
+    "extraResources": [
+      "servers.dat"
     ]
-  },
-  "dependencies": {
-    "electron-updater": "^6.1.7",
-    "minecraft-launcher-core": "^3.2.3"
-  },
-  "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
   }
 }
